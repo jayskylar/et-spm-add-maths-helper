@@ -93,6 +93,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setMalaySelected(selected: Boolean) {
         _isMalaySelected.value = selected
         sharedPrefs.edit().putBoolean("is_malay_selected", selected).apply()
+        loadTopicProgresses()
     }
 
     fun setDarkTheme(enabled: Boolean) {
@@ -194,22 +195,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- QUIZ ENGINE ---
-    fun startQuiz(form: Int) {
+    private val _quizDifficultyChoice = MutableStateFlow<Difficulty?>(null)
+    val quizDifficultyChoice: StateFlow<Difficulty?> = _quizDifficultyChoice.asStateFlow()
+
+    fun startQuiz(form: Int, difficulty: Difficulty? = null) {
         _quizFormChoice.value = form
+        _quizDifficultyChoice.value = difficulty
         _isQuizSubmitted.value = false
         _quizSelectedAnswers.value = emptyMap()
         _currentQuizIndex.value = 0
 
-        // Take up to 5 random questions from chapters of this specified form
         val formChapters = SyllabusData.chapters.filter { it.form == form }
-        val pool = formChapters.flatMap { it.quizQuestions }
+        var pool = formChapters.flatMap { it.quizQuestions }
+        if (difficulty != null) {
+            pool = pool.filter { it.difficulty == difficulty }
+        }
         
-        // Shuffle and pick 5
-        _activeQuizQuestions.value = pool.shuffled(Random(System.currentTimeMillis())).take(5)
+        // Safe fallback in case a particular difficulty level has fewer questions than expected
+        val selectedPool = if (pool.isNotEmpty()) pool else formChapters.flatMap { it.quizQuestions }
+        _activeQuizQuestions.value = selectedPool.shuffled(Random(System.currentTimeMillis())).take(5)
     }
 
     fun quitQuiz() {
         _quizFormChoice.value = null
+        _quizDifficultyChoice.value = null
         _activeQuizQuestions.value = emptyList()
         _quizSelectedAnswers.value = emptyMap()
         _isQuizSubmitted.value = false

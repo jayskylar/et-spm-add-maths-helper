@@ -49,6 +49,13 @@ object SyllabusData {
                     "x+3/2",
                     TranslatedText("Let y = f(x), then make x the subject of the formula.", "Biarkan y = f(x), kemudian jadikan x sebagai tajuk rumus."),
                     TranslatedText("Let y = 2x - 3 => y + 3 = 2x => x = (y+3)/2. Thus, f^-1(x) = (x+3)/2.", "Biar y = 2x - 3 => y + 3 = 2x => x = (y+3)/2. Maka, f^-1(x) = (x+3)/2.")
+                ),
+                PracticeQuestion(
+                    "f4_c1_p3", Difficulty.HARD,
+                    TranslatedText("Given fg(x) = 6x - 7 and f(x) = 2x + 1, find g(x).", "Diberi fg(x) = 6x - 7 dan f(x) = 2x + 1, cari g(x)."),
+                    "3x-4",
+                    TranslatedText("Express fg(x) as f(g(x)), expand using f(x), and solve for g(x).", "Ungkapkan fg(x) sebagai f(g(x)), kembangkan menggunakan f(x), dan selesaikan untuk g(x)."),
+                    TranslatedText("1. f(g(x)) = 6x - 7\n2. Since f(x) = 2x + 1, then f(g(x)) = 2g(x) + 1\n3. 2g(x) + 1 = 6x - 7\n4. 2g(x) = 6x - 8 => g(x) = 3x - 4.", "1. f(g(x)) = 6x - 7\n2. Disebabkan f(x) = 2x + 1, maka f(g(x)) = 2g(x) + 1\n3. 2g(x) + 1 = 6x - 7\n4. 2g(x) = 6x - 8 => g(x) = 3x - 4.")
                 )
             ),
             quizQuestions = listOf(
@@ -57,7 +64,16 @@ object SyllabusData {
                     TranslatedText("If f(x) = 3x - 5 and g(x) = x^2, find the composite function fg(x).", "Jika f(x) = 3x - 5 dan g(x) = x^2, cari fungsi gubahan fg(x)."),
                     listOf("3x^2 - 5", "(3x - 5)^2", "3x^2 - 15", "x^2(3x - 5)"),
                     0,
-                    TranslatedText("fg(x) = f(g(x)) = f(x^2) = 3(x^2) - 5 = 3x^2 - 5.", "fg(x) = f(g(x)) = f(x^2) = 3(x^2) - 5 = 3x^2 - 5.")
+                    TranslatedText("fg(x) = f(g(x)) = f(x^2) = 3(x^2) - 5 = 3x^2 - 5.", "fg(x) = f(g(x)) = f(x^2) = 3(x^2) - 5 = 3x^2 - 5."),
+                    difficulty = Difficulty.EASY
+                ),
+                QuizQuestion(
+                    "f4_c1_q2",
+                    TranslatedText("If f(x) = x/(x-2), find the inverse function f^-1(x).", "Jika f(x) = x/(x-2), cari fungsi songsang f^-1(x)."),
+                    listOf("2x/(x-1)", "x/(2x-1)", "x-2/x", "2x/(1-x)"),
+                    0,
+                    TranslatedText("Let y = x/(x-2) => y(x-2) = x => xy - 2y = x => xy - x = 2y => x(y-1) = 2y => x = 2y/(y-1). Hence f^-1(x) = 2x/(x-1).", "Biar y = x/(x-2) => y(x-2) = x => xy - 2y = x => xy - x = 2y => x(y-1) = 2y => x = 2y/(y-1). Maka f^-1(x) = 2x/(x-1)."),
+                    difficulty = Difficulty.HARD
                 )
             )
         ),
@@ -605,6 +621,13 @@ object SyllabusData {
                     "12x^3",
                     TranslatedText("Apply power rule ax^n => anx^(n-1).", "Gunakan petua kuasa ax^n => anx^(n-1)."),
                     TranslatedText("dy/dx = 3 * 4 * x^(4-1) = 12x^3.", "dy/dx = 3 * 4 * x^(4-1) = 12x^3.")
+                ),
+                PracticeQuestion(
+                    "f5_c2_p2", Difficulty.HARD,
+                    TranslatedText("Find the turning point coordinates of y = 2x^2 - 8x + 3 and state its nature (Min/Max).", "Cari koordinat titik pusingan bagi y = 2x^2 - 8x + 3 dan nyatakan jenisnya (Min/Maks)."),
+                    "(2, -5), Min",
+                    TranslatedText("Differentiate once to find turning x (dy/dx = 0), then use second derivative d^2y/dx^2 to find its nature.", "Bezakan sekali untuk mencari nilai x (dy/dx = 0), kemudian gunakan terbitan kedua d^2y/dx^2 untuk menentukan sifatnya."),
+                    TranslatedText("1. dy/dx = 4x - 8\n2. Set dy/dx = 0 => 4x - 8 = 0 => x = 2.\n3. At x = 2, y = 2(2)^2 - 8(2) + 3 = -5. Turning point: (2, -5).\n4. Second derivative: d^2y/dx^2 = 4 (positive, > 0). Therefore, it is a Minimum point.", "1. dy/dx = 4x - 8\n2. Tetapkan dy/dx = 0 => 4x - 8 = 0 => x = 2.\n3. Pada x = 2, y = 2(2)^2 - 8(2) + 3 = -5. Titik pusingan: (2, -5).\n4. Terbitan kedua: d^2y/dx^2 = 4 (positif, > 0). Jelas ia titik Minimum.")
                 )
             ),
             quizQuestions = listOf(
@@ -656,6 +679,13 @@ object SyllabusData {
                     "7",
                     TranslatedText("Find anti-derivative x^3, then evaluate at bounds F(2) - F(1).", "Cari anti-terbitan x^3, kemudian nilaikan pada batas F(2) - F(1)."),
                     TranslatedText("Integral of 3x^2 is x^3. [x^3]_1^2 = 2^3 - 1^3 = 8 - 1 = 7.", "Kamilan bagi 3x^2 ialah x^3. [x^3]_1^2 = 2^3 - 1^3 = 8 - 1 = 7.")
+                ),
+                PracticeQuestion(
+                    "f5_c3_p2", Difficulty.HARD,
+                    TranslatedText("Given dy/dx = 4x^3 - 2 and y = 5 when x = 1, find y in terms of x.", "Diberi dy/dx = 4x^3 - 2 dan y = 5 apabila x = 1, cari y dalam sebutan x."),
+                    "x^4-2x+6",
+                    TranslatedText("Integrate dy/dx to find y = x^4 - 2x + C, then substitute x=1, y=5 to calculate C.", "Kamilkan dy/dx untuk mendapatkan y = x^4 - 2x + C, kemudian ganti x=1, y=5 untuk mengira C."),
+                    TranslatedText("1. y = integral (4x^3 - 2) dx = x^4 - 2x + C\n2. Substitute (1, 5) => 5 = (1)^4 - 2(1) + C\n3. 5 = 1 - 2 + C => C = 6\n4. Hence, y = x^4 - 2x + 6.", "1. y = kamilan (4x^3 - 2) dx = x^4 - 2x + C\n2. Ganti (1, 5) => 5 = (1)^4 - 2(1) + C\n3. 5 = 1 - 2 + C => C = 6\n4. Oleh itu, y = x^4 - 2x + 6.")
                 )
             ),
             quizQuestions = listOf(

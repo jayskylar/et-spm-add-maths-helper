@@ -1,5 +1,6 @@
 package com.example
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -46,11 +47,53 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableHighRefreshRate()
         enableEdgeToEdge()
         setContent {
             val isDarkTheme by viewModel.isDarkTheme.collectAsState()
             MyApplicationTheme(darkTheme = isDarkTheme) {
                 AppMainScreen(viewModel)
+            }
+        }
+    }
+
+    private fun enableHighRefreshRate() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                @Suppress("DEPRECATION")
+                val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    display
+                } else {
+                    windowManager.defaultDisplay
+                }
+                val modes = display?.supportedModes
+                if (!modes.isNullOrEmpty()) {
+                    val maxRate = modes.map { it.refreshRate }.maxOrNull() ?: 60f
+                    if (maxRate > 60f) {
+                        val lp = window.attributes
+                        var setViaReflection = false
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            try {
+                                val minField = lp::class.java.getField("preferredMinDisplayRefreshRate")
+                                val maxField = lp::class.java.getField("preferredMaxDisplayRefreshRate")
+                                minField.set(lp, maxRate)
+                                maxField.set(lp, maxRate)
+                                setViaReflection = true
+                            } catch (re: Throwable) {
+                                // ignore reflection fallbacks
+                            }
+                        }
+                        if (!setViaReflection) {
+                            val highestMode = modes.maxByOrNull { it.refreshRate }
+                            if (highestMode != null) {
+                                lp.preferredDisplayModeId = highestMode.modeId
+                            }
+                        }
+                        window.attributes = lp
+                    }
+                }
+            } catch (e: Exception) {
+                // Graceful fallback
             }
         }
     }
@@ -349,7 +392,7 @@ fun SyllabusBrowserScreen(viewModel: MainViewModel, isMs: Boolean) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 80.dp)
         ) {
-            items(listChapters) { chapter ->
+            items(listChapters, key = { chapter -> "${chapter.form}_${chapter.number}" }) { chapter ->
                 val stats = progresses.find { it.chapterNumber == chapter.number && it.form == chapter.form }
                 ChapterListCard(chapter = chapter, stats = stats, isMs = isMs) {
                     viewModel.openChapter(chapter)
@@ -643,7 +686,7 @@ fun FormulasSubTab(formulas: List<Formula>, isMs: Boolean) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(bottom = 80.dp)
         ) {
-            items(filteredFormulas) { formula ->
+            items(filteredFormulas, key = { formula -> formula.expression }) { formula ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     elevation = CardDefaults.cardElevation(2.dp),
@@ -757,13 +800,13 @@ fun PracticeSubTab(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(bottom = 100.dp)
         ) {
-            items(filteredQuestions) { q ->
+            items(filteredQuestions, key = { q -> q.id }) { q ->
                 val ansState = studentAnswers[q.id] ?: Triple("", false, false) // (text, isChecked, isCorrect)
                 val isExpanded = expandedWorkings[q.id] ?: false
                 
                 // Track direct manual toggle states
-                var showAnswerDirectly by rememberSaveable(q.id) { mutableStateOf(false) }
-                var showStepsDirectly by rememberSaveable(q.id) { mutableStateOf(false) }
+                var showAnswerDirectly by remember(q.id) { mutableStateOf(false) }
+                var showStepsDirectly by remember(q.id) { mutableStateOf(false) }
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -1346,6 +1389,8 @@ fun QuizTab(viewModel: MainViewModel, isMs: Boolean) {
 
 @Composable
 fun QuizSelectionScreen(viewModel: MainViewModel, isMs: Boolean) {
+    var selectedDifficulty by remember { mutableStateOf<Difficulty?>(null) } // null means "All" / "Semua"
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1377,16 +1422,89 @@ fun QuizSelectionScreen(viewModel: MainViewModel, isMs: Boolean) {
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Difficulty Selector Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = if (isMs) "Pilih Tahap Kesukaran:" else "Select Difficulty Level:",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val difficulties = listOf(
+                        null,
+                        Difficulty.EASY,
+                        Difficulty.MEDIUM,
+                        Difficulty.HARD
+                    )
+
+                    difficulties.forEach { diff ->
+                        val isSel = selectedDifficulty == diff
+                        val label = diff?.label(isMs) ?: (if (isMs) "Semua" else "All")
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (isSel) {
+                                        when (diff) {
+                                            null -> MaterialTheme.colorScheme.primary
+                                            Difficulty.EASY -> Color(0xFF10B981)
+                                            Difficulty.MEDIUM -> Color(0xFFEA580C)
+                                            Difficulty.HARD -> Color(0xFFEF4444)
+                                        }
+                                    } else {
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                                    }
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isSel) Color.Transparent else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .clickable { selectedDifficulty = diff }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = if (isSel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         // Form 4 Quiz Button
         Button(
-            onClick = { viewModel.startQuiz(4) },
+            onClick = { viewModel.startQuiz(4, selectedDifficulty) },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp),
+                .height(56.dp),
             shape = RoundedCornerShape(12.dp)
         ) {
+            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Start", modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = if (isMs) "Mula Kuiz Tingkatan 4" else "Start Form 4 Quiz",
                 fontSize = 15.sp,
@@ -1394,17 +1512,19 @@ fun QuizSelectionScreen(viewModel: MainViewModel, isMs: Boolean) {
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Form 5 Quiz Button
         Button(
-            onClick = { viewModel.startQuiz(5) },
+            onClick = { viewModel.startQuiz(5, selectedDifficulty) },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp),
+                .height(56.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
             shape = RoundedCornerShape(12.dp)
         ) {
+            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Start", modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = if (isMs) "Mula Kuiz Tingkatan 5" else "Start Form 5 Quiz",
                 fontSize = 15.sp,
@@ -1450,7 +1570,7 @@ fun QuizActiveScreen(
 
             // Progress text
             Text(
-                text = if (isMs) "Soalan ${currentIndex + 1} dari 5" else "Question ${currentIndex + 1} of 5",
+                text = if (isMs) "Soalan ${currentIndex + 1} dari ${activeQuestions.size}" else "Question ${currentIndex + 1} of ${activeQuestions.size}",
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.outline
             )
@@ -1460,7 +1580,7 @@ fun QuizActiveScreen(
 
         // Progress bar indicator
         LinearProgressIndicator(
-            progress = { (currentIndex + 1) / 5f },
+            progress = { (currentIndex + 1).toFloat() / activeQuestions.size.toFloat() },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -1476,6 +1596,32 @@ fun QuizActiveScreen(
             border = borderModifier()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
+                // Difficulty pill badge for active question
+                Box(
+                    modifier = Modifier
+                        .padding(bottom = 12.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(
+                            when (question.difficulty) {
+                                Difficulty.EASY -> Color(0xFF10B981).copy(alpha = 0.15f)
+                                Difficulty.MEDIUM -> Color(0xFFEA580C).copy(alpha = 0.15f)
+                                Difficulty.HARD -> Color(0xFFEF4444).copy(alpha = 0.15f)
+                            }
+                        )
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = question.difficulty.label(isMs),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = when (question.difficulty) {
+                            Difficulty.EASY -> Color(0xFF047857)
+                            Difficulty.MEDIUM -> Color(0xFFC2410C)
+                            Difficulty.HARD -> Color(0xFFB91C1C)
+                        }
+                    )
+                }
+
                 Text(
                     text = question.question.get(isMs),
                     fontSize = 15.sp,
@@ -1597,8 +1743,8 @@ fun QuizActiveScreen(
 
             // Submit / Reset / Quit control
             if (!isSubmitted) {
-                if (currentIndex == 4) {
-                    val allAnswered = selectedAnswers.size == 5
+                if (currentIndex == activeQuestions.size - 1) {
+                    val allAnswered = selectedAnswers.size >= activeQuestions.size
                     Button(
                         onClick = { viewModel.submitQuiz() },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
@@ -1625,7 +1771,7 @@ fun QuizActiveScreen(
             if (isSubmitted) {
                 TextButton(
                     onClick = { viewModel.moveQuizIndex(1) },
-                    enabled = currentIndex < 4
+                    enabled = currentIndex < activeQuestions.size - 1
                 ) {
                     Text(text = if (isMs) "Seterusnya" else "Next")
                 }

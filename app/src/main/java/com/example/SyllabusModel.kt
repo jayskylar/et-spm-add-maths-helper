@@ -42,7 +42,8 @@ data class QuizQuestion(
     val question: TranslatedText,
     val options: List<String>, // multiple choice options
     val correctIndex: Int,
-    val explanation: TranslatedText
+    val explanation: TranslatedText,
+    val difficulty: Difficulty = Difficulty.MEDIUM
 )
 
 data class Chapter(
