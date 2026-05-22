@@ -1,0 +1,6 @@
+{
+  "name": "SPM Add Maths Helper",
+  "description": "An interactive tutor and step-by-step solver for Malaysian SPM Additional Mathematics (Form 4 & 5 syllabus). Includes comprehensive formulas, bilingual notes, practice quizzes, weak topic tracking, and AI explanations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
